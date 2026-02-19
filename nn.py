@@ -86,7 +86,7 @@ class NN:
         for i in range(n):
             self.weights[i] -= self.lr * grad_ws[i]
             self.biases[i] -= self.lr * grad_bs[i] 
-        return
+        return    
     
     def accuracy(self, y_true, y_pred):
         y_pred_class = (y_pred >= 0.5).astype(int)
