@@ -26,7 +26,8 @@ class LinearRegressor:
             self.gd(grad_w, grad_b, lr)     
             
             print(f'********* Epoch {e+1} *********') 
-            print(f'Loss: {loss:.4f}')     
+            print(f'Loss: {loss:.4f}')    
+        print(f'{epochs} epochs done!') 
     # Loss
     def MSE(self, y_true, y_pred):
         return np.mean((y_true - y_pred)**2)
