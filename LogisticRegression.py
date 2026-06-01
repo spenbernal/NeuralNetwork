@@ -21,21 +21,32 @@ class LogisticRegression:
         self.bias -= lr * grad_b
         return 
     
-    def IRLS(self, grad_w, X, y,tol):
+    def IRLS(self, X, y, epochs):
         #Iteratively reweighted least squares
-        prev = float('inf')
-        while np.abs(prev - self.weights) > tol:
-            logits = X @ self.weights + self.bias
-            mu = self.sigmoid(logits)
-            s = mu * (1 - mu)
-            z = logits + (y - mu) / s
+        N, D = X.shape[0], X.shape[1]
+        self.weights = np.zeros(D)
+        z = np.zeros(N)
+        s = np.zeros(N)
+        for _ in range(epochs):
+            for n in range(N):
+                a_n = self.weights.T @ X[n] #a_n = D, x D,
+                mu_n = self.sigmoid(a_n) # scalar
+                s[n] = mu_n*(1 - mu_n) # scalar
+                z[n] = a_n + (y[n] - mu_n) / s[n]
+            S = np.diag(s) # N,N
+            self.weights = np.linalg.solve(X.T @ S @ X, X.T @ S @ z)
+
+        # Vectorized Version
+        '''
+        for _ in range(epochs):
+            a = X @ self.weights #N,D x D, = N,
+            mu = self.sigmoid(a) # N,
+            s = mu * (1 - mu) # N, 
+            z = a + (y - mu) / s
             S = np.diag(s)
-            prev = self.weights
-            self.weights = np.linalg.inv(X.T @ S @ X) @ X.T @ S @ z
-                
-    
+            self.weights = np.linalg.solve(X.T @ S @ X, X.T @ S @ z)
+        '''
         return 
-    
     
     def train(self, X_train, y_train, epochs, lr):
         N = X_train.shape[0]
