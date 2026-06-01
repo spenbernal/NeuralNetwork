@@ -1,5 +1,4 @@
 import numpy as np
-
 class LogisticRegression:
     def __init__(self, features) -> None:
         self.features = features
@@ -21,6 +20,22 @@ class LogisticRegression:
         self.weights -= lr * grad_w
         self.bias -= lr * grad_b
         return 
+    
+    def IRLS(self, grad_w, X, y,tol):
+        #Iteratively reweighted least squares
+        prev = float('inf')
+        while np.abs(prev - self.weights) > tol:
+            logits = X @ self.weights + self.bias
+            mu = self.sigmoid(logits)
+            s = mu * (1 - mu)
+            z = logits + (y - mu) / s
+            S = np.diag(s)
+            prev = self.weights
+            self.weights = np.linalg.inv(X.T @ S @ X) @ X.T @ S @ z
+                
+    
+        return 
+    
     
     def train(self, X_train, y_train, epochs, lr):
         N = X_train.shape[0]
@@ -52,5 +67,6 @@ class LogisticRegression:
         print(f'Loss: {loss:.4F}')
         
         return    
+
     
         
