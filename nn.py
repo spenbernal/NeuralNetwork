@@ -1,132 +1,132 @@
 import numpy as np
-# Binary Classification
-# loss: BCE
-# activation: sigmoid
-class NN:
-    # Initialization
-    def __init__(self, sigmoid, reLu, loss_function, input_dim, output_dim, lr):
-        #input layer, 10 Neuron Hidden Layer, 3 Neuron Hidden Layer, Output Layer
-        # num of features
-        self.input_dim = input_dim
-        # num of outputs (2 since binary)
-        self.output_dim = output_dim
-        # neurons per layer
-        self.layer_dims = [input_dim, 10, 3, output_dim]
+class Linear:
+    def __init__(self, N, o) -> None:
+        # N: dim of vector
+        # o: output dim
+        self.N = N
+        self.o = o
+        self.W = np.random.randn(o, N) # N, o
+        self.b = np.random.randn(o)
+    
+    def forward(self, x):
+        # X: N, input vector
+        self.x = x # N
+        a = x @ self.W.T + self.b 
+        return a
+    
+    def backwards(self, delta): 
+        # delta: N, error from future layer
+        self.grad_W = np.outer(delta, self.x)
+        self.grad_b = delta
+        
+        # update delta
+        delta = self.W.T @ delta
+        return delta
+    
+    def update(self, eta):
+        self.W -= eta * self.grad_W
+        self.b -= eta * self.grad_b
+        return 
+class ReLU:
+    def forward(self, logits):
+        # logits: 
+        self.logits = logits
+        return np.maximum(0, logits)
+    
+    def backwards(self, delta):
+        delta = delta * np.where(self.logits > 0, 1, 0)
+        return delta
+    
+    def update(self, eta):
+        pass
 
-        # weights and biases for each layer
-        self.weights = []
-        self.biases = []
-        # set up activation and loss functions
-        self.sigmoid = sigmoid
-        self.reLu = reLu
-        self.loss_function = loss_function
-        
-        self.lr = lr
-        
-        #setting up weights and biases in layers
-        n = len(self.layer_dims)
-        for i in range(n - 1):
-            #(input,10) , (10,3), (3,1)
-            self.weights.append(np.random.randn(self.layer_dims[i], self.layer_dims[i+1]))
-            self.biases.append(np.random.randn(self.layer_dims[i+1]))
+class SoftmaxCrossEntropy:
+    def forward(self, logits, y):
+        self.y = y
+        self.probs = np.exp(logits) / np.exp(logits).sum()
+        loss = -(y * np.log(self.probs)).sum()
+        return loss
     
-    def printModel(self):
-        print('********** Model Architecture **********')
-        print(f'# of Hidden Layers: {len(self.layer_dims) - 2}')
-        print(f'Input Dim: {self.input_dim}')
-        for i in range(1, len(self.layer_dims) - 1): 
-            print(f'Neurons in Hidden Layer {i}: {self.layer_dims[i]}')  
-        print(f'Output Dim: {self.output_dim}')
-        print(f'Loss Function: {self.loss_function.__name__}')  #type: ignore
+    def backwards(self):
+        # output gradient
+        return self.probs - self.y
     
-    # Forward Pass     
+    def update(self, eta):
+        pass
+    
+class Dropout:
+    def __init__(self, p) -> None:
+        self.p = p
+        
+    def forward(self, logits: np.ndarray, training):
+        if not training:
+            return logits
+    
+        self.mask = np.random.random(size= logits.shape) > self.p
+        return logits * self.mask / (1 - self.p)
+    
+    def backwards(self, delta):
+        delta = delta * self.mask / (1 - self.p)
+        return delta 
+class Sequential:
+    # A classic feedforward NN module
+    # training and evaluation are task dependent so they live outside the module
+    def __init__(self, layers) -> None:
+        # layers: list of layers     
+        self.layers = layers
+        self.training = True
+    
+    def train(self):
+        self.training = True
+        
+    def eval(self):
+        self.training = False
+        
     def forward(self, X):
-        # X = n_samples, features
-        a = X
-        memo = {} #stores input, linear output, and activated output
-        n_hidden = len(self.weights) - 1
-        for i in range(n_hidden):
-            input = a
-            z = np.dot(a, self.weights[i]) + self.biases[i] 
-            a = self.reLu(z)
-            memo[i] = (input, z, a) # input, linear output, activated output
-            
-        out = np.dot(a, self.weights[-1]) + self.biases[-1]
-        activ_out = self.sigmoid(out)
-        k = len(memo)
-        memo[k] = (a, out, activ_out)
-
-        return activ_out, memo
-
-    
-    def backPropogation(self, y, history):
-        # Loss = loss of forward run
-        # history = memo from forward run
-        N = y.shape[0]
-        grad_ws = {}
-        grad_bs = {}
-        last_layer = len(self.weights) - 1
-        input, _, y_hat = history[last_layer] #input = (10,1) ,_ = (3,1), y_hat = (1,1)
-        delta = y_hat - y
-        grad_ws[last_layer] = input.T @ delta / N # delta = (N,1), input = (N, 3)
-        grad_bs[last_layer] = np.sum(delta, axis= 0) / N # N, 1 -> N,3 -> N,10
-        n = len(self.weights) - 1
-        for i in range(n - 1, -1, -1):
-            input, z, a_z = history[i]
-            delta = (delta @ self.weights[i+1].T) * deriv_reLu(z) #N,1 x 1,3
-            
-            grad_ws[i] = input.T @ delta / N
-            grad_bs[i] = np.sum(delta, axis= 0) / N
+        for layer in self.layers:
+            X = layer.forward(X)
         
-        return grad_ws, grad_bs
+        return X
     
-    # Gradient Descent - Parameter Optimization
-    def gd(self, grad_ws, grad_bs):
-        n = len(self.weights)
-        for i in range(n):
-            self.weights[i] -= self.lr * grad_ws[i]
-            self.biases[i] -= self.lr * grad_bs[i] 
-        return    
-    
-    def accuracy(self, y_true, y_pred):
-        y_pred_class = (y_pred >= 0.5).astype(int)
-        return np.mean(y_pred_class.flatten() == y_true.flatten())
+    def backwards(self, delta):
+        for layer in reversed(self.layers):
+            delta = layer.backwards(delta) 
+        return delta
         
-    def train(self, X_train, y_train, batch_size= 1, epochs=1000):
-        for e in range(epochs):
-            # forward, loss, backprop, update
-            y_pred, history = self.forward(X_train)
-            loss = self.loss_function(y_train, y_pred) # type:ignore
-            acc = self.accuracy(y_train, y_pred)
-            grad_ws, grad_bs = self.backPropogation(y_train, history)
-            self.gd(grad_ws, grad_bs)
-            
-            print(f'Epoch: {e + 1} | Loss : {loss:.5f} | Accuracy : {acc:.5f}')
-            
-        print(f'{epochs} Done!')
-        return
-    
-    def eval(self, X_test, y_test):
-        y_pred, _ = self.forward(X_test)
-        loss = self.loss_function(y_test, y_pred)
-        acc = self.accuracy(y_test, y_pred)
-        print(f'Loss: {loss:.5f} | Accuracy: {acc:5f}')
+    def update(self, eta):
+        for layer in self.layers:
+            layer.update(eta)
         return
 
-def sigmoid(z):
-    return 1 / (1 + np.exp(-z))
+class ResNet:
+    # A residual neural network
+    def __init__(self, nn: Sequential, proj: Linear) -> None:
+        self.proj = proj
+        self.nn = nn
+    
+    def forward(self, X):
+        # want to feed X into the last layer
+        # assume layer has same output shape as X
+        logits = self.nn.forward(X)
+        logits = self.proj.forward(logits) + X
+        return logits 
 
-def reLu(z):
-    return np.maximum(0, z)   
+    def backwards(self, delta):
+        delta_skip = delta    
+        
+        delta_main = self.proj.backwards(delta)
+        delta_main = self.nn.backwards(delta_main)
+        delta_x = delta_main + delta_skip
+        return delta_x
+    
+    def update(self, eta):
+        self.proj.update(eta)
+        self.nn.update(eta)
+        return 
+        
+        
+    
 
-def deriv_reLu(z):
-    return np.where(z > 0, 1, 0)  
-
-def BinaryCrossEntropyLoss(y, y_hat):
-    # y = (n_samples, 1)
-    y_hat = np.clip(y_hat, 1e-15, 1 - 1e-15)
-    loss = -(y * np.log(y_hat) + (1 - y) * np.log(1- y_hat))
-    return np.mean(loss)
 
 
 
