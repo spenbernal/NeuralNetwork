@@ -73,7 +73,7 @@ class DecoderBlock:
         self.ffn = ffn
     
     def forward(self, Y, E):
-        A = self.ln_1.forward(self.mha_1.forward(Y, Y, Y) + Y)
+        A = self.ln_1.forward(self.mha_1.forward(Y, Y, Y, causal_mask= True) + Y)
         Z = self.ln_2.forward(self.mha_2.forward(A, E, E) + A)
         D = self.ln_3.forward(self.ffn.forward(Z) + Z)
         return D

@@ -325,14 +325,20 @@ class TransformerAttention:
         self.proj_V = Linear(D_k, self.dim_v, bias= False)
         self.alphas = []
         
+        
     
-    def forward(self, X_q, X_k, X_v):
+    def forward(self, X_q, X_k, X_v, causal_mask= False):
+        
         self.Q = self.proj_Q.forward(X_q) # N, T, dim_k
         self.K = self.proj_K.forward(X_k)
         self.V = self.proj_V.forward(X_v) # N, T, dim_v
         self.scale = np.sqrt(self.K.shape[-1])
         dot = self.Q @ self.K.transpose(0, 2, 1) # N, T, T
-        score = dot / self.scale # N, T, T
+        score = dot / self.scale # N, T_q, T_k
+        if causal_mask:
+            T_q, T_k = score.shape[1], score.shape[2]
+            mask = np.tril(np.ones((T_q, T_k))).astype(bool)
+            score[:, ~mask] = -1e7
         alpha = np.exp(score) / np.exp(score).sum(axis= -1, keepdims= True) # N, T, T
         self.alphas.append(alpha)
         attn = alpha @ self.V # N, T, dim_v
@@ -385,7 +391,7 @@ class MultiHeadAttention:
         self.p_o = p_o
         
     
-    def forward(self, X_q, X_k, X_v):
+    def forward(self, X_q, X_k, X_v, causal_mask= False):
         # X_q: N, T_q, D_q
         # X_k: N, T_k, D_k
         # X_v: N, T_k, D_k
@@ -396,7 +402,7 @@ class MultiHeadAttention:
         self.outputs = [] 
         for head in self.mha:
             # self attention in encoder
-            out = head.forward(X_q, X_k, X_v) # N, T, d_v
+            out = head.forward(X_q, X_k, X_v, causal_mask) # N, T, d_v
             self.outputs.append(out)
         self.outs = np.concatenate(self.outputs, axis= -1) # N, T, H*d_v
         
