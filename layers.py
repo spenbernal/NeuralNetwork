@@ -506,8 +506,3 @@ class LayerNorm:
             - self.X_norm * np.sum(delta * self.X_norm, axis=axes, keepdims=True) 
         )
         return dX
-        
-        
-        
-         
-        

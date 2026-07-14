@@ -86,7 +86,7 @@ class RNNDecoder(Decoder):
         self.layer_o.zero_grad()
 
 class AttentionDecoder(Decoder): 
-    def __init__(self, D, T, C, rnn_cell: l.RNNCell, layer_o: l.Linear, attention: l.Attention) -> None:
+    def __init__(self, D, T, C, rnn_cell: l.RNNCell, layer_o: l.Linear, attention: l.RNNAttention) -> None:
         self.D = D
         self.T = T
         self.C = C
