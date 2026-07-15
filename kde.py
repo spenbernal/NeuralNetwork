@@ -1,7 +1,6 @@
 import numpy as np
 class KDE:
-    def __init__(self, kernel, h) -> None:
-        self.h = h
+    def __init__(self, kernel) -> None:
         self.kernel = kernel 
         
     def fit(self, X_train):
@@ -9,8 +8,7 @@ class KDE:
     
     def predict(self, X_test):
         # D,
-        D = X_test.size
         dist = np.linalg.norm(X_test - self.X_train, axis= -1)
-        estimates = self.kernel(dist / self.h) # N,
-        prediction = estimates.mean() / self.h**D
+        estimates = self.kernel(dist) # N,
+        prediction = estimates.mean()
         return prediction
