@@ -40,6 +40,11 @@ class GaussianProcess:
         
 
 class MercerKernels:
-    def rbf(self, bandwidth):
-        return 
+    def rbf(self, X1, X2, bandwidth= 1.0, variance= 1.0):
+        # X1: N,D
+        # X2: M,D
+        diff = X1[:, None, :] - X2[None, :, :] # N, M, D
+        squared_dist = np.linalg.norm(diff**2, axis= -1)
+        return variance * np.exp(-0.5 * squared_dist / bandwidth**2)
+        
         
