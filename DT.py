@@ -2,13 +2,14 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 class CART(ABC):
-    def __init__(self, max_depth: int) -> None:
+    def __init__(self, max_depth: int, max_features: int) -> None:
         self.j = None # feature
         self.t = None # threshold
         self.left = None # left subtree
         self.right = None # right subtree
         self.label = None # label if we reach a leaf
         self.max_depth = max_depth # maximum depth for stopping
+        self.max_features = max_features
         
     @abstractmethod
     def impurity(self, y: np.ndarray):
@@ -26,12 +27,16 @@ class CART(ABC):
     def split_feature(self, X: np.ndarray, y: np.ndarray):
         # function that determines which feature to split on
         # returns feature, threshold, gini_index
-        N, D = X.shape[0], X.shape[1]
+        N, D = X.shape[0], np.arange(X.shape[1])
         # (j,t) : score
         best_score = np.inf
         best_feature = None
         best_threshold = None
-        for d in range(D):
+        if self.max_features != None:
+            D = np.random.choice(D, replace= False, size= self.max_features)
+            
+            
+        for d in D:
             T = np.unique(X[:, d])
             for t in T:
                 L = X[:, d] <= t
@@ -80,7 +85,7 @@ class CART(ABC):
         return
     
     def new_child(self):
-        return type(self)(max_depth= self.max_depth)
+        return type(self)(max_depth= self.max_depth, max_features= self.max_features)
     
     def predict_one_sample(self, x):
         # x: D,
@@ -147,6 +152,3 @@ class Bagging:
         
         return final_preds
                 
-                
-            
-        
