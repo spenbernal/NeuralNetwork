@@ -114,23 +114,46 @@ class RegressionTree(CART):
         return np.mean((y - np.mean(y))**2)
     
     def leaf_label(self, y: np.ndarray):
-        return np.mean(y)
-    
-    
-        
-    
-    
-    
-    
-    
-            
-                    
+        return np.mean(y)        
 
+class Bagging:
+    def __init__(self, M, max_depth, task) -> None:
+        self.M = M
+        self.task = task
+        if self.task.lower() == 'classification':
+            tree = ClassificationTree
+        elif self.task.lower() == 'regression':
+            tree = RegressionTree
+        else:
+            raise ValueError('Unknown Task')
+        
+        self.forest = [tree(max_depth) for _ in range(M)]
+        
+    def fit(self, X, y):
+        N = X.shape[0]
+        for tree in self.forest:
+            rand_samples = np.random.randint(low= 0, high= N, size= N)
+            X_rand, y_rand = X[rand_samples], y[rand_samples]
+            tree.fit(X_rand, y_rand)
             
-def majority_vote(y):
-    classes, counts = np.unique(y, return_counts= True)
-    return classes[np.argmax(counts)]
-                
+        return
+
+    def predict(self, X):
+        preds = np.zeros((X.shape[0], self.M))
+        for idx, tree in enumerate(self.forest):
+            pred = tree.predict(X)
+            preds[:, idx] = pred
+            
+        if self.task.lower() == 'regression':
+            final_preds = preds.mean(axis= -1)
+        else:
+            final_preds = np.zeros(X.shape[0])
+            for idx, prediction in enumerate(preds):
+                classes, counts = np.unique(prediction, return_counts= True)
+                final_preds[idx] = classes[np.argmax(counts)]
+        
+        return final_preds
                 
                 
             
+        
