@@ -117,17 +117,10 @@ class RegressionTree(CART):
         return np.mean(y)        
 
 class Bagging:
-    def __init__(self, M, max_depth, task) -> None:
+    def __init__(self, M, Treeclass, **tree_kwargs) -> None:
         self.M = M
-        self.task = task
-        if self.task.lower() == 'classification':
-            tree = ClassificationTree
-        elif self.task.lower() == 'regression':
-            tree = RegressionTree
-        else:
-            raise ValueError('Unknown Task')
-        
-        self.forest = [tree(max_depth) for _ in range(M)]
+        self.Treeclass = Treeclass
+        self.forest = [Treeclass(**tree_kwargs) for _ in range(M)]
         
     def fit(self, X, y):
         N = X.shape[0]
@@ -144,13 +137,13 @@ class Bagging:
             pred = tree.predict(X)
             preds[:, idx] = pred
             
-        if self.task.lower() == 'regression':
-            final_preds = preds.mean(axis= -1)
-        else:
-            final_preds = np.zeros(X.shape[0])
-            for idx, prediction in enumerate(preds):
-                classes, counts = np.unique(prediction, return_counts= True)
-                final_preds[idx] = classes[np.argmax(counts)]
+        if issubclass(self.Treeclass, RegressionTree):
+            return preds.mean(axis= -1)
+        
+        final_preds = np.empty(X.shape[0], dtype= preds.dtype)
+        for idx, tree_preds in enumerate(preds):
+            classes, counts = np.unique(tree_preds, return_counts= True)
+            final_preds[idx] = classes[np.argmax(counts)]
         
         return final_preds
                 
