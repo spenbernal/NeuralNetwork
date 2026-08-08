@@ -120,7 +120,7 @@ def CrossValidation(regularizers, X, y, K):
         
         Hyperparameter testing for best lambda for lasso/ridge/elatic net
         '''
-        #splits X,y into K # of subarrays
+        #splits X,y into K num of subarrays
         train_sets_X = np.array_split(X, K, axis= 0)
         train_sets_y = np.array_split(y, K, axis= 0)
             

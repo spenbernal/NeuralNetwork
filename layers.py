@@ -261,10 +261,14 @@ class RNNCell(Layer):
 
 class RNNAttention:
     def __init__(self, H_enc_d, H_dec_d) -> None:
+        # initialize projection matrices for Key, Values
         self.proj_K = Linear(H_enc_d, H_dec_d, bias= False)
         self.proj_V = Linear(H_enc_d, H_dec_d, bias= False)
         
     def set_encoder_states(self, H_enc):
+        # project encoder hidden states to same space as query space
+        # intialize lists for queries and attention weights
+        # initalize total gradient of keys and values
         self.K = self.proj_K.forward(H_enc) 
         self.V = self.proj_V.forward(H_enc)
         self.scale = np.sqrt(self.K.shape[-1])
@@ -276,34 +280,45 @@ class RNNAttention:
     def forward(self, H_dec: np.ndarray):
         # H_dec: N, H_dec
         self.Qs.append(H_dec)
-        
+        # calculate dot product of query and keys
         self.dot_prod = (H_dec[:, None, :] @ self.K.transpose(0, 2, 1)).squeeze(axis= 1) # N,1,H_dec x N,H_dec, T_enc
-        
+        # scale dot product (scaled dot product attn)
         scores = self.dot_prod / self.scale # N,T_enc
-        
+        # compute attention weights (softmax)
         alphas = np.exp(scores) / np.exp(scores).sum(axis= 1, keepdims= True) # N,T_enc
+        # store weights
         self.alphas.append(alphas)
+        # calculate attention score
         attn = (alphas[:, None, :] @ self.V).squeeze(axis= 1) # N,1,T_enc x N,T_enc,H_dec
-        
+        # return attention output/context vector
         return attn
     
     def backwards(self, delta):
         # delta: N,H_dec
+        # retrieve current attention weight and query
         alphas = self.alphas.pop()
         Q = self.Qs.pop()
         
         delta_attn = delta[:, None, :] # N, 1, H_dec
+        # compute gradient wrt Values
         d_V = alphas[:, None, :].transpose(0, 2, 1) @ delta_attn #N,T_enc,H_dec
+        # accumulate gradient
         self.d_V_total += d_V
+        # compute gradient wrt attention weights
         d_alphas = (self.V @ delta_attn.transpose(0, 2, 1)).squeeze(axis= 2) #N,T_enc
+        # compute gradient wrt scaled dot product (softmax VJP)
         d_scores = alphas * (d_alphas  - np.sum(d_alphas * alphas, axis= 1, keepdims= True)) #N,T_enc
+        # compute gradient wrt unscaled scores
         d_dot = d_scores / self.scale #N,T_enc
+        # compute gradient wrt Keys
         d_K_scores = d_dot[:,:, None] @ Q[:, None, :] # N,T_enc,H_dec
         self.d_K_total += d_K_scores
+        # compute gradient wrt Query
         d_Q = (d_dot[:,:, None].transpose(0, 2, 1) @ self.K).squeeze(axis= 1) #N,H_dec
         return d_Q
         
     def backwards_final(self):
+        # pass accumulated gradients back to projection layers
         d_H_enc_K = self.proj_K.backwards(self.d_K_total)
         d_H_enc_V = self.proj_V.backwards(self.d_V_total)
         return d_H_enc_K + d_H_enc_V
@@ -470,7 +485,7 @@ class PositionalEncoding:
         pos = np.arange(max_len)[:, None]
         j = np.arange(D)[None, :]
         
-        angles = pos / np.pow(10000, 2 * (j//2) / D) # max_len, D
+        angles = pos / np.power(10000, 2 * (j//2) / D) # max_len, D
         self.P = np.zeros(max_len, D)
         self.P[:, 0::2] = np.sin(angles[:, 0::2])
         self.P[:, 1::2] = np.cos(angles[:, 1::2])

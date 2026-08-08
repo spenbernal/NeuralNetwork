@@ -24,10 +24,11 @@ class CART(ABC):
             return True
         return False
     
-    def split_feature(self, X: np.ndarray, y: np.ndarray):
+    def split_feature(self, X: np.ndarray, y: np.ndarray, sample_weights= None):
         # function that determines which feature to split on
         # returns feature, threshold, gini_index
         N, D = X.shape[0], np.arange(X.shape[1])
+            
         # (j,t) : score
         best_score = np.inf
         best_feature = None
@@ -151,4 +152,14 @@ class Bagging:
             final_preds[idx] = classes[np.argmax(counts)]
         
         return final_preds
-                
+
+class AdaBoost:
+    # Adaboost using classification trees (original algorithm)
+    # Assume classification trees
+    def __init__(self, M, **tree_kwargs) -> None:
+        self.M = M
+        self.trees = [ClassificationTree(**tree_kwargs) for _ in range(M)]
+        
+    def fit(self, X, y, sample_weights):
+        pass
+        
