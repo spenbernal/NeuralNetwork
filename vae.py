@@ -29,7 +29,7 @@ class VAE:
     def KL_divergence(self):
         # assume latent prior is standard normal 
         # latent posterior has parameters outputted from encoder
-        KL = (-1/2) * (self.logvar - self.var - self.mu**2 + 1).sum()
+        KL = (-1/2) * (self.logvar - self.var - self.mu**2 + 1).sum(axis= 1)
         return KL
     
     def forward(self, X):
@@ -37,19 +37,20 @@ class VAE:
         z = self.reparameterize()
         X_recon = self.decode(z)
         # ELBO
-        KL = self.KL_divergence()
-        loss = self.reconstruction_loss.forward(X, X_recon) + KL
+        KL_per_point = self.KL_divergence()
+        loss = self.reconstruction_loss.forward(X, X_recon) + KL_per_point.mean()
         return X_recon, loss
         
     def backwards(self):
         delta_recon = self.reconstruction_loss.backwards()
         delta_z = self.decoder.backwards(delta_recon)
-        delta_mu = delta_z
+        delta_mu = delta_z.copy()
         delta_logvar = delta_z * 0.5 * self.std * self.epsilon
         
         # KL contribution
-        delta_mu += self.mu
-        delta_logvar += 0.5 * (self.var - 1)
+        N = self.mu.shape[0]
+        delta_mu += self.mu / N
+        delta_logvar += 0.5 * (self.var - 1) / N
         
         delta_X = self.encoder.backwards(delta_mu, delta_logvar)
         return delta_X
