@@ -1,10 +1,11 @@
 import numpy as np
 
 class VAE:
-    def __init__(self, encoder, decoder, reconstruction_loss) -> None:
+    def __init__(self, encoder, decoder, latent_dim, reconstruction_loss) -> None:
         # MLP, CNN, RNN, ...
         self.encoder = encoder
         self.decoder = decoder
+        self.latent_dim = latent_dim
         self.reconstruction_loss = reconstruction_loss
         
     def encode(self, X):
@@ -54,8 +55,13 @@ class VAE:
         
         delta_X = self.encoder.backwards(delta_mu, delta_logvar)
         return delta_X
-        
-        
-        
-        
-        
+    
+    def embed(self, X):
+        self.encode(X)
+        return self.mu
+    
+    def generate(self, n):
+        # sample from latent prior
+        z = np.random.randn(n, self.latent_dim)
+        # generate data
+        return self.decode(z)
