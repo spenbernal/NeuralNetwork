@@ -1,5 +1,5 @@
 import numpy as np
-import layers as l
+import deeplearning.layers as l
 from abc import ABC, abstractmethod    
 class Decoder(ABC):
     'Abstract class for Decoders'

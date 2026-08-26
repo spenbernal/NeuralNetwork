@@ -1,4 +1,4 @@
-import layers as l
+import deeplearning.layers as l
 import numpy as np
 class Sequential:
     # Simple chain neural network 

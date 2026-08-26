@@ -25,7 +25,7 @@ class Linear(Layer):
         # O: dim of output
         self.D = D
         self.O = O
-        self.W = np.random.randn(O, D) 
+        self.W = np.random.randn(O, D) * np.sqrt(2.0 / D)
         self.b = np.zeros(O)
         self.inputs = []
         self.use_bias = bias
@@ -122,7 +122,8 @@ class ConvolutionLayer(Layer):
         self.k = kernel_size
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.W = np.random.randn(out_channels, in_channels, self.k, self.k) 
+        self.W = np.random.randn(out_channels, in_channels, self.k, self.k) \
+                * np.sqrt(2.0 / in_channels * kernel_size * kernel_size)
         self.b = np.zeros(out_channels)
         self.p = padding
     
@@ -216,6 +217,29 @@ class Flatten(Layer):
     
     def zero_grad(self):
         pass
+
+class Upsample:
+    def __init__(self, scale) -> None:
+        self.scale = 2
+        
+    def forward(self, X):
+        self.input_shape = X.shape
+        
+        X = np.repeat(X, self.scale, axis= 2)
+        X = np.repeat(X, self.scale, axis= 3)
+        
+        return X
+    
+    def backwards(self, delta):
+        N, C, H, W = self.input_shape
+        delta = delta.reshape(N, C, H, self.scale, W, self.scale)
+        return delta.sum(axis= (3,5))  
+    
+    def update(self, eta):
+        pass
+    
+    def zero_grad(self):
+        pass      
 
 class RNNCell(Layer):
     def __init__(self, D, h) -> None:

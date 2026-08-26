@@ -18,7 +18,3 @@ class Perceptron:
                     self.weights += lr * (y - y_hat) * x
                     self.bias += lr * (y - y_hat)
         return 
-                    
-                
-                
-            

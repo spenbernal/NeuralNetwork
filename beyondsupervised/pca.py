@@ -32,6 +32,7 @@ class PPCA:
     def fit(self, L, X):
         # L: latent dimension
         # X: N,D design matrix
+        self.L = L
         N, D = X.shape[0], X.shape[1]
         # empirical mean
         self.mu = np.mean(X, axis= 0)
@@ -59,13 +60,11 @@ class PPCA:
         self.W = U_L @ np.sqrt((L_L - self.sigma_squared * np.eye(L))) @ R
         
         self.M = self.W.T @ self.W + self.sigma_squared * np.eye(L)
-        
+    
+    def embed(self, X_test):
+        X_c = X_test - self.mu
+        # return paramters for latent posterior
         posterior_mean = np.linalg.solve(self.M, self.W.T @ X_c.T).T
-        posterior_var = self.sigma_squared * np.linalg.solve(self.M, np.eye(L))
-        
+        posterior_var = self.sigma_squared * np.linalg.solve(self.M, np.eye(self.L))
+                
         return posterior_mean, posterior_var
-
-            
-        
-        
-        

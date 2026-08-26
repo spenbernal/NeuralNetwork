@@ -1,6 +1,6 @@
 import numpy as np
-import layers as l
-import nn as nn
+import deeplearning.layers as l
+import deeplearning.nn as nn
 
 class EncoderBlock:
     def __init__(self, mha: l.MultiHeadAttention, ln_1: l.LayerNorm, ffn: nn.Sequential, ln_2: l.LayerNorm)-> None:

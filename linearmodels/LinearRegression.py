@@ -1,47 +1,24 @@
 import numpy as np
-class LinearRegressor:
-    # Constructor
-    def __init__(self, n_features):
-        self.weights = np.random.rand(n_features)
-        self.bias = np.random.rand()
+
+class LinearRegression:
+    # Standard Linear Regression by OLS
+    def __init__(self) -> None:
+        pass
+    
+    def fit(self, X, y):
+        # X: (N,D+1) design matrix
+        # y: (N,) target vector
+        self.weights = np.linalg.solve(X.T @ X, X.T @ y)
+    
+    def eval(self, X, y):
+        # (M, D+1) design matrix
+        y_pred = X @ self.weights
+        mse = ((y - y_pred)**2).mean()
+        ss_res = np.sum((y - y_pred)**2)
+        ss_tot = np.sum((y - y.mean())**2)
+        R2_score = 1 - ss_res / ss_tot
+        return mse, R2_score
         
-    # Computation
-    def forward(self, X_train):
-        return X_train @ self.weights + self.bias 
-    
-    def gd(self, grad_w, grad_b, lr):
-        self.weights -= lr * grad_w
-        self.bias -= lr * grad_b
-        return 
-    
-    # Training Function
-    def train(self, X_train, y_train, epochs=1000, lr=.001, verbose=False):
-        N = X_train.shape[0]
-        for e in range(epochs):
-            y_pred = self.forward(X_train)
-            loss = self.MSE(y_train, y_pred)
-            grad_w = (2/N) * (X_train.T @ (y_pred - y_train)) 
-            grad_b = (2/N) * np.sum((y_pred - y_train))
-            self.gd(grad_w, grad_b, lr)     
-            
-            print(f'********* Epoch {e+1} *********') 
-            print(f'Loss: {loss:.4f}')    
-        print(f'{epochs} epochs done!') 
-    # Loss
-    def MSE(self, y_true, y_pred):
-        return np.mean((y_true - y_pred)**2)
-
-    # Evaluation
-    def evaluate(self, X_test, y_test):
-        y_pred = self.forward(X_test)
-        loss = self.MSE(y_test, y_pred)
-        print(f'Evaluation')
-        print(f'MSE: {loss:.4f}')
-        print('Parameters')
-        for idx, w in enumerate(self.weights):
-            print(f'Weight {idx+1}: {w:.3f}')
-        print(f'Bias: {self.bias:.3f}')
-
 class RidgeRegression:
     # Linear regression with L2 regularization
     def __init__(self, lam) -> None:
@@ -69,17 +46,16 @@ class RidgeRegression:
         
     def eval(self, X, y):
         y_pred = np.matmul(X,self.weights)
-        loss = (y - y_pred).T @  (y - y_pred)
-        R2_score = 1 - (np.sum((y - y_pred)**2) / np.sum((np.mean(y) - y_pred)**2)) 
-        print(f'Loss: {loss}')
-        print(f'R^2 score: {R2_score}')
-        for i in range(len(self.weights)):
-            print(f'Weight #{i}: {self.weights[i]}')
+        mse = ((y - y_pred)**2).mean()
+        ss_res = np.sum((y - y_pred)**2)
+        ss_tot = np.sum((y - y.mean())**2)
+        R2_score = 1 - ss_res / ss_tot
+        return mse, R2_score
 class LassoRegression: 
     #Linear Regression with L1 regularization
     def __init__(self, lam) -> None:
         self.lam = lam
-    def fit(self, X, y, epochs):
+    def fit(self, X, y, epochs= 10):
         # soft thresholding
         # X: (N,D+1)
         # y: (N,)
@@ -100,18 +76,17 @@ class LassoRegression:
                 mask[d] = True
     def eval(self, X, y):
         y_pred = np.matmul(X,self.weights)
-        loss = np.mean((y - y_pred)**2)
-        R2_score = 1 - (np.sum((y - y_pred)**2) / np.sum((np.mean(y) - y_pred)**2)) 
-        print(f'Loss: {loss}')
-        print(f'R^2 score: {R2_score}')
-        for i in range(len(self.weights)):
-            print(f'Weight #{i}: {self.weights[i]}')
+        mse = np.mean((y - y_pred)**2)
+        ss_res = np.sum((y - y_pred)**2)
+        ss_tot = np.sum((y - y.mean())**2)
+        R2_score = 1 - ss_res / ss_tot
+        return mse, R2_score
         
     
 def SoftThreshold(x, delta):
     return np.sign(x) * np.maximum(0, (np.abs(x) - delta))
         
-def CrossValidation(regularizers, X, y, K):
+def CrossValidation(regularizers, X, y, K, model_name):
         '''
         X: training data (N,D+1)
         y: training labels (N,)
@@ -128,7 +103,10 @@ def CrossValidation(regularizers, X, y, K):
         for lam in regularizers:
             # initiate loss and model
             loss = 0
-            model = RidgeRegression(lam)
+            if model_name == 'Ridge':
+                model = RidgeRegression(lam)
+            elif model_name == 'Lasso':
+                model = LassoRegression(lam)
             #K fold cross validation
             for k in range(K):
                 # get validation sets

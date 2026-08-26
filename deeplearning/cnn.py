@@ -1,5 +1,5 @@
-import layers as l
-import nn as nn
+import deeplearning.layers as l
+import deeplearning.nn as nn
 class CNN:
     # A simple CNN for identifying hand drawn digits
     def __init__(self, conv_layers: list[l.Layer], NN: nn.Sequential) -> None:
